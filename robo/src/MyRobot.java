@@ -13,8 +13,9 @@ import java.util.Random;
 public class MyRobot extends AdvancedRobot {
 
     //learning params
-    private final static double ALPHA = 0.1;
-    private final static double GAMMA = 0.9;
+    private final static double ALPHA = 0.01;
+    private final static double GAMMA = 0.8;
+    private static final double EXPLORE_RATE = 0.8;
 
     //robot state
     private double robot_x = 0;
@@ -34,7 +35,6 @@ public class MyRobot extends AdvancedRobot {
     private double totalReward = 0.0;
     private double reward = 0;
 
-    private static final boolean isExploring = true;
 
     private static final String TAB = "    ";
 
@@ -51,7 +51,6 @@ public class MyRobot extends AdvancedRobot {
         }
 
         while (true) {
-            turnGunRight(360);
 
             int action = getAction();
             String stateAction = getCurrentState() + action;
@@ -59,7 +58,6 @@ public class MyRobot extends AdvancedRobot {
 
             //perform action
             performAction(action);
-//            turnGunRight(360);
 
             //update the table
             int getMaxValueAction = getMaxAction(getCurrentState());
@@ -70,11 +68,6 @@ public class MyRobot extends AdvancedRobot {
             totalReward += reward;
             reward = 0;
         }
-
-//            ahead(100);
-//            turnGunRight(360);
-//            back(100);
-//            turnGunRight(360);
     }
 
     private void performAction(int action) {
@@ -84,23 +77,25 @@ public class MyRobot extends AdvancedRobot {
         switch (action) {
             case 1:
                 //move left
-                setTurnLeft(90);
+                setTurnLeft(45);
                 setAhead(150);
                 break;
             case 2:
                 //move right
-                setTurnRight(90);
+                setTurnRight(45);
                 setAhead(150);
                 break;
             case 3:
                 //turn gun left
-                setTurnGunLeft(90);
+                setTurnGunLeft(45);
                 break;
             case 4:
                 //turn gun right
-                setTurnGunRight(90);
+                setTurnGunRight(45);
                 break;
         }
+
+        execute();
     }
 
     private String getCurrentState() {
@@ -114,15 +109,15 @@ public class MyRobot extends AdvancedRobot {
         return x + "" + y + "" + angle + "" + distanceToEnemy;
     }
 
+    private Random random = new Random();
+
     private int getAction() {
-        if (isExploring) {
+        if (random.nextDouble() < EXPLORE_RATE) {
             return getRandomAction();
         } else {
             return getMaxAction(getCurrentState());
         }
     }
-
-    private Random random = new Random();
 
     private int getRandomAction() {
         return random.nextInt(ACTIONS_SIZE) + 1;
@@ -130,12 +125,12 @@ public class MyRobot extends AdvancedRobot {
 
     private int getMaxAction(String state) {
         int action = 0;
-        double actionValue = Double.MIN_VALUE;
+        double actionValue = - Double.MAX_VALUE;
         for (String key : QTable.keySet()) {
             if (key.startsWith(state)) {
                 double value = QTable.get(key);
                 if (actionValue < value) {
-                    action = key.charAt(key.length() - 1);
+                    action = Character.getNumericValue(key.charAt(key.length() - 1));
                     actionValue = value;
                 }
             }
@@ -204,7 +199,7 @@ public class MyRobot extends AdvancedRobot {
     @Override
     public void onScannedRobot(ScannedRobotEvent e) {
         distanceToEnemy = e.getDistance();
-        angleToEnemy = e.getBearingRadians() + getHeadingRadians();
+        angleToEnemy = e.getBearing() + 180;
         enemyEnergy = e.getEnergy();
         robot_x = getX();
         robot_y = getY();
@@ -213,13 +208,13 @@ public class MyRobot extends AdvancedRobot {
 
     @Override
     public void onHitByBullet(HitByBulletEvent e) {
-        back(10);
+        setBack(10);
         reward -= 3;
     }
 
     @Override
     public void onHitWall(HitWallEvent e) {
-        back(20);
+        setBack(20);
         reward -= 3.5;
     }
 
