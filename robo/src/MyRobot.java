@@ -29,7 +29,7 @@ public class MyRobot extends AdvancedRobot {
     private static final int DISTANCE_BUCKETS = 4;
     private static final int ACTIONS_SIZE = 4;
 
-    private Map<String, Double> QTable = new HashMap<>();
+    private Map<String, Double> QTable = new HashMap<String, Double>();
 
     private double totalReward = 0.0;
     private double reward = 0;
@@ -62,7 +62,7 @@ public class MyRobot extends AdvancedRobot {
 //            turnGunRight(360);
 
             //update the table
-            double getMaxValueAction = getMaxAction(getCurrentState());
+            int getMaxValueAction = getMaxAction(getCurrentState());
             double futureValue = QTable.get(getCurrentState() + getMaxValueAction);
             double updateValue = (1 - ALPHA) * oldValue + ALPHA * (reward + GAMMA * futureValue);
             QTable.put(stateAction, updateValue);
@@ -114,10 +114,10 @@ public class MyRobot extends AdvancedRobot {
         return x + "" + y + "" + angle + "" + distanceToEnemy;
     }
 
-    private int getAction(){
-        if(isExploring){
+    private int getAction() {
+        if (isExploring) {
             return getRandomAction();
-        }else{
+        } else {
             return getMaxAction(getCurrentState());
         }
     }
@@ -130,15 +130,14 @@ public class MyRobot extends AdvancedRobot {
 
     private int getMaxAction(String state) {
         int action = 0;
-        double actionValue = 0;
-        for(String key: QTable.keySet()){
-            if(key.startsWith(state)){
+        double actionValue = Double.MIN_VALUE;
+        for (String key : QTable.keySet()) {
+            if (key.startsWith(state)) {
                 double value = QTable.get(key);
-                if(actionValue < value){
+                if (actionValue < value) {
                     action = key.charAt(key.length() - 1);
                     actionValue = value;
                 }
-
             }
         }
         return action;
@@ -269,7 +268,7 @@ public class MyRobot extends AdvancedRobot {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if(w != null){
+            if (w != null) {
                 w.flush();
                 w.close();
             }
