@@ -324,7 +324,7 @@ public class MyRobot extends AdvancedRobot {
         public void writeLine(String text) {
             PrintWriter writer = null;
             try {
-                writer = new PrintWriter(new RobocodeFileOutputStream(getDataFile(fileName).getName(), true));
+                writer = new PrintWriter(new RobocodeFileOutputStream(getDataFile(fileName).getAbsolutePath(), true));
                 writer.println(text);
             } catch (IOException e) {
                 e.printStackTrace();
