@@ -32,15 +32,11 @@ public class MyRobot extends AdvancedRobot {
 
     private static final String TAB = "    ";
 
-
-    private CSVWriter csvWriter;
-
-
     public void run() {
 
 //        initQTable();
 //        saveQTable();
-        csvWriter = new CSVWriter("data.csv");
+        CSVWriter csvWriter = new CSVWriter("data.csv");
         csvWriter.writeLineSeparatedWithDelimiter("header1", "header2");
 
         try {
@@ -63,7 +59,7 @@ public class MyRobot extends AdvancedRobot {
             double futureValue = QTable.get(getCurrentState() + getMaxValueAction);
             double updateValue = (1 - ALPHA) * oldValue + ALPHA * (reward + GAMMA * futureValue);
             QTable.put(stateAction, updateValue);
-            writeStateActionToCSV(action);
+            writeStateActionToCSV(csvWriter, action);
 
             totalReward += reward;
             reward = 0;
@@ -109,7 +105,7 @@ public class MyRobot extends AdvancedRobot {
         return x + "" + y + "" + angle + "" + distanceToEnemy;
     }
 
-    private void writeStateActionToCSV(int action) {
+    private void writeStateActionToCSV(CSVWriter csvWriter, int action) {
 
         int x = quantizePosition(getX()); //robot_x
         int y = quantizePosition(getY()); //robot_y
