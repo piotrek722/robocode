@@ -26,8 +26,8 @@ public class MyRobot extends AdvancedRobot {
 
     // q table params
     private static final int POSITION_BUCKETS = 8;
-    private static final int ANGLE_BUCKETS = 4;
-    private static final int DISTANCE_BUCKETS = 4;
+    private static final int ANGLE_BUCKETS = 8;
+//    private static final int DISTANCE_BUCKETS = 4;
     private static final int ACTIONS_SIZE = 4;
 
     private Map<String, Double> QTable = new HashMap<String, Double>();
@@ -77,21 +77,21 @@ public class MyRobot extends AdvancedRobot {
         switch (action) {
             case 1:
                 //move left
-                setTurnLeft(45);
+                setTurnLeft(15);
                 setAhead(150);
                 break;
             case 2:
                 //move right
-                setTurnRight(45);
+                setTurnRight(15);
                 setAhead(150);
                 break;
             case 3:
                 //turn gun left
-                setTurnGunLeft(45);
+                setTurnGunLeft(15);
                 break;
             case 4:
                 //turn gun right
-                setTurnGunRight(45);
+                setTurnGunRight(15);
                 break;
         }
 
@@ -104,9 +104,9 @@ public class MyRobot extends AdvancedRobot {
         int x = quantizePosition(getX()); //robot_x
         int y = quantizePosition(getY()); //robot_y
         int angle = quantizeAngle(angleToEnemy);
-        int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
+//        int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
 
-        return x + "" + y + "" + angle + "" + distanceToEnemy;
+        return x + "" + y + "" + angle;
     }
 
     private Random random = new Random();
@@ -166,14 +166,22 @@ public class MyRobot extends AdvancedRobot {
 
         int angleBucket = 0;
 
-        if (angle <= 90) {
+        if (angle <= 45) {
             angleBucket = 1;
-        } else if (angle <= 180) {
+        } else if (angle <= 90) {
             angleBucket = 2;
-        } else if (angle <= 270) {
+        } else if (angle <= 135) {
             angleBucket = 3;
-        } else if (angle <= 360) {
+        } else if (angle <= 180) {
             angleBucket = 4;
+        } else if (angle <= 225) {
+            angleBucket = 5;
+        } else if (angle <= 270) {
+            angleBucket = 6;
+        } else if (angle <= 315) {
+            angleBucket = 7;
+        } else if (angle <= 360) {
+            angleBucket = 8;
         }
 
         return angleBucket;
@@ -274,11 +282,9 @@ public class MyRobot extends AdvancedRobot {
         for (int i = 1; i <= POSITION_BUCKETS; i++) {
             for (int j = 1; j <= POSITION_BUCKETS; j++) {
                 for (int k = 1; k <= ANGLE_BUCKETS; k++) {
-                    for (int l = 1; l <= DISTANCE_BUCKETS; l++) {
                         for (int m = 1; m <= ACTIONS_SIZE; m++) {
-                            QTable.put(i + "" + j + "" + k + "" + l + "" + m, 0.0);
+                            QTable.put(i + "" + j + "" + k + "" + m, 0.0);
                         }
-                    }
                 }
             }
         }
