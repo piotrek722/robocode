@@ -13,17 +13,15 @@ public class MyRobot extends AdvancedRobot {
     private static final double EXPLORE_RATE = 0.8;
 
     //robot state
-    private double robot_x = 0;
-    private double robot_y = 0;
     private double angleToEnemy = 0;
     private double distanceToEnemy = 0;
     private double enemyEnergy = 0;
 
     // q table params
-    private static final int POSITION_BUCKETS = 8;
     private static final int ANGLE_BUCKETS = 4;
     private static final int DISTANCE_BUCKETS = 4;
-    private static final int ACTIONS_SIZE = 4;
+    private static final int ENERGY_BUCKETS = 4;
+    private static final int ACTIONS_SIZE = 6;
 
     private Map<String, Double> QTable = new HashMap<String, Double>();
 
@@ -33,7 +31,6 @@ public class MyRobot extends AdvancedRobot {
     private static final String TAB = "    ";
 
     public void run() {
-
 //        initQTable();
 //        saveQTable();
         CSVWriter csvWriter = new CSVWriter("data.csv");
@@ -57,12 +54,14 @@ public class MyRobot extends AdvancedRobot {
             //update the table
             int getMaxValueAction = getMaxAction(getCurrentState());
             double futureValue = QTable.get(getCurrentState() + getMaxValueAction);
-            double updateValue = (1 - ALPHA) * oldValue + ALPHA * (reward + GAMMA * futureValue);
+            double sumReward = reward + getEnergy() / 100 - enemyEnergy / 100;
+            double updateValue = (1 - ALPHA) * oldValue + ALPHA * (sumReward + GAMMA * futureValue);
+
+            totalReward += sumReward;
+            reward = 0;
+
             QTable.put(stateAction, updateValue);
             writeStateActionToCSV(csvWriter, action);
-
-            totalReward += reward;
-            reward = 0;
         }
     }
 
@@ -74,18 +73,28 @@ public class MyRobot extends AdvancedRobot {
             case 1:
                 //move left
                 setTurnLeft(45);
-                setAhead(150);
+                setAhead(50);
                 break;
             case 2:
                 //move right
                 setTurnRight(45);
-                setAhead(150);
+                setAhead(50);
                 break;
             case 3:
+                //back left
+                setTurnLeft(45);
+                setBack(50);
+                break;
+            case 4:
+                //back right
+                setTurnRight(45);
+                setBack(50);
+                break;
+            case 5:
                 //turn gun left
                 setTurnGunLeft(45);
                 break;
-            case 4:
+            case 6:
                 //turn gun right
                 setTurnGunRight(45);
                 break;
@@ -97,22 +106,28 @@ public class MyRobot extends AdvancedRobot {
     private String getCurrentState() {
 
         //quantizied
-        int x = quantizePosition(getX()); //robot_x
-        int y = quantizePosition(getY()); //robot_y
         int angle = quantizeAngle(angleToEnemy);
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
+        int energy = quantizeEnergy(getEnergy());
+        int enemyEnergy = quantizeEnergy(this.enemyEnergy);
 
-        return x + "" + y + "" + angle + "" + distanceToEnemy;
+        return "" + angle + distanceToEnemy + energy + enemyEnergy;
     }
 
     private void writeStateActionToCSV(CSVWriter csvWriter, int action) {
 
-        int x = quantizePosition(getX()); //robot_x
-        int y = quantizePosition(getY()); //robot_y
         int angle = quantizeAngle(angleToEnemy);
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
+        int energy = quantizeEnergy(getEnergy());
+        int enemyEnergy = quantizeEnergy(this.enemyEnergy);
 
-        csvWriter.writeLineSeparatedWithDelimiter("" + x, "" + y, "" + angle, "" + distanceToEnemy, "" + action);
+        csvWriter.writeLineSeparatedWithDelimiter(
+                "" + angle,
+                "" + distanceToEnemy,
+                "" + energy,
+                "" + enemyEnergy,
+                "" + action
+        );
     }
 
     private Random random = new Random();
@@ -142,30 +157,6 @@ public class MyRobot extends AdvancedRobot {
             }
         }
         return action;
-    }
-
-    private int quantizePosition(double position) {
-        int positionBucket = 0;
-
-        if (position <= 100) {
-            positionBucket = 1;
-        } else if (position <= 200) {
-            positionBucket = 2;
-        } else if (position <= 300) {
-            positionBucket = 3;
-        } else if (position <= 400) {
-            positionBucket = 4;
-        } else if (position <= 500) {
-            positionBucket = 5;
-        } else if (position <= 600) {
-            positionBucket = 6;
-        } else if (position <= 700) {
-            positionBucket = 7;
-        } else if (position <= 800) {
-            positionBucket = 8;
-        }
-        return positionBucket;
-
     }
 
     private int quantizeAngle(double angle) {
@@ -202,26 +193,39 @@ public class MyRobot extends AdvancedRobot {
         return distanceBucket;
     }
 
+    private int quantizeEnergy(double energy) {
+
+        int energyBucket = 0;
+
+        if (energy <= 25) {
+            energyBucket = 1;
+        } else if (energy <= 50) {
+            energyBucket = 2;
+        } else if (energy <= 75) {
+            energyBucket = 3;
+        } else if (energy <= 100) {
+            energyBucket = 4;
+        }
+
+        return energyBucket;
+    }
+
     @Override
     public void onScannedRobot(ScannedRobotEvent e) {
         distanceToEnemy = e.getDistance();
         angleToEnemy = e.getBearing() + 180;
         enemyEnergy = e.getEnergy();
-        robot_x = getX();
-        robot_y = getY();
         fire(1);
     }
 
     @Override
     public void onHitByBullet(HitByBulletEvent e) {
-        setBack(10);
         reward -= 3;
     }
 
     @Override
     public void onHitWall(HitWallEvent e) {
-        setBack(20);
-        reward -= 3.5;
+        reward -= 5;
     }
 
     @Override
@@ -277,10 +281,10 @@ public class MyRobot extends AdvancedRobot {
     }
 
     private void initQTable() {
-        for (int i = 1; i <= POSITION_BUCKETS; i++) {
-            for (int j = 1; j <= POSITION_BUCKETS; j++) {
-                for (int k = 1; k <= ANGLE_BUCKETS; k++) {
-                    for (int l = 1; l <= DISTANCE_BUCKETS; l++) {
+        for (int i = 1; i <= ANGLE_BUCKETS; i++) {
+            for (int j = 1; j <= DISTANCE_BUCKETS; j++) {
+                for (int k = 1; k <= ENERGY_BUCKETS; k++) {
+                    for (int l = 1; l <= ENERGY_BUCKETS; l++) {
                         for (int m = 1; m <= ACTIONS_SIZE; m++) {
                             QTable.put(i + "" + j + "" + k + "" + l + "" + m, 0.0);
                         }
