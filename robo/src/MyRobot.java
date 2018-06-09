@@ -33,14 +33,14 @@ public class MyRobot extends AdvancedRobot {
     private static final String TAB = "    ";
 
 
-    private CSVWriter csvWriter = new CSVWriter("data.csv");
+    private CSVWriter csvWriter;
 
 
     public void run() {
 
 //        initQTable();
 //        saveQTable();
-
+        csvWriter = new CSVWriter("data.csv");
         csvWriter.writeLineSeparatedWithDelimiter("header1", "header2");
 
         try {
@@ -310,7 +310,7 @@ public class MyRobot extends AdvancedRobot {
 
         private String getTextSeparetedByDelimiter(String... strings) {
 
-            if (strings == null) {
+            if (strings.length == 0) {
                 return null;
             }
 
