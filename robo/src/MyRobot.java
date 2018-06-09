@@ -2,13 +2,8 @@
 
 import robocode.*;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.io.*;
+import java.util.*;
 
 public class MyRobot extends AdvancedRobot {
 
@@ -35,14 +30,18 @@ public class MyRobot extends AdvancedRobot {
     private double totalReward = 0.0;
     private double reward = 0;
 
-
     private static final String TAB = "    ";
+
+
+    private CSVWriter csvWriter = new CSVWriter("data.csv");
 
 
     public void run() {
 
 //        initQTable();
 //        saveQTable();
+
+        csvWriter.writeLineSeparatedWithDelimiter("header1", "header2");
 
         try {
             loadQTable();
@@ -64,6 +63,7 @@ public class MyRobot extends AdvancedRobot {
             double futureValue = QTable.get(getCurrentState() + getMaxValueAction);
             double updateValue = (1 - ALPHA) * oldValue + ALPHA * (reward + GAMMA * futureValue);
             QTable.put(stateAction, updateValue);
+            writeStateActionToCSV(action);
 
             totalReward += reward;
             reward = 0;
@@ -107,6 +107,16 @@ public class MyRobot extends AdvancedRobot {
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
 
         return x + "" + y + "" + angle + "" + distanceToEnemy;
+    }
+
+    private void writeStateActionToCSV(int action){
+
+        int x = quantizePosition(getX()); //robot_x
+        int y = quantizePosition(getY()); //robot_y
+        int angle = quantizeAngle(angleToEnemy);
+        int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
+
+        csvWriter.writeLineSeparatedWithDelimiter("" + x, "" + y, "" + angle, "" + distanceToEnemy, "" + action);
     }
 
     private Random random = new Random();
@@ -279,6 +289,44 @@ public class MyRobot extends AdvancedRobot {
                             QTable.put(i + "" + j + "" + k + "" + l + "" + m, 0.0);
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private class CSVWriter{
+
+        private static final String DELIMITER = ",";
+        private final String fileName;
+
+        public CSVWriter(String fileName, String... headers) {
+            this.fileName = fileName;
+            writeLineSeparatedWithDelimiter(headers);
+        }
+
+        public void writeLineSeparatedWithDelimiter(String... strings) {
+            writeLine(getTextSeparetedByDelimiter(strings));
+        }
+
+        private String getTextSeparetedByDelimiter(String... strings){
+            StringBuilder sb = new StringBuilder();
+            for (String header : strings) {
+                sb.append(header).append(DELIMITER);
+            }
+            return sb.substring(0, sb.length() - 1);
+        }
+
+        public void writeLine(String text){
+            PrintWriter writer = null;
+            try {
+                writer = new PrintWriter(new RobocodeFileOutputStream(fileName, true));
+                writer.println(text);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }finally {
+                if(writer != null){
+                    writer.flush();
+                    writer.close();
                 }
             }
         }
