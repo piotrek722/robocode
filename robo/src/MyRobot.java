@@ -33,14 +33,14 @@ public class MyRobot extends AdvancedRobot {
     private static final String TAB = "    ";
 
 
-    private CSVWriter csvWriter = new CSVWriter("data.csv");
+    private CSVWriter csvWriter;
 
 
     public void run() {
 
 //        initQTable();
 //        saveQTable();
-
+        csvWriter = new CSVWriter("data.csv");
         csvWriter.writeLineSeparatedWithDelimiter("header1", "header2");
 
         try {
@@ -109,7 +109,7 @@ public class MyRobot extends AdvancedRobot {
         return x + "" + y + "" + angle + "" + distanceToEnemy;
     }
 
-    private void writeStateActionToCSV(int action){
+    private void writeStateActionToCSV(int action) {
 
         int x = quantizePosition(getX()); //robot_x
         int y = quantizePosition(getY()); //robot_y
@@ -135,7 +135,7 @@ public class MyRobot extends AdvancedRobot {
 
     private int getMaxAction(String state) {
         int action = 0;
-        double actionValue = - Double.MAX_VALUE;
+        double actionValue = -Double.MAX_VALUE;
         for (String key : QTable.keySet()) {
             if (key.startsWith(state)) {
                 double value = QTable.get(key);
@@ -294,7 +294,7 @@ public class MyRobot extends AdvancedRobot {
         }
     }
 
-    private class CSVWriter{
+    private class CSVWriter {
 
         private static final String DELIMITER = ",";
         private final String fileName;
@@ -308,7 +308,12 @@ public class MyRobot extends AdvancedRobot {
             writeLine(getTextSeparetedByDelimiter(strings));
         }
 
-        private String getTextSeparetedByDelimiter(String... strings){
+        private String getTextSeparetedByDelimiter(String... strings) {
+
+            if (strings.length == 0) {
+                return null;
+            }
+
             StringBuilder sb = new StringBuilder();
             for (String header : strings) {
                 sb.append(header).append(DELIMITER);
@@ -316,15 +321,15 @@ public class MyRobot extends AdvancedRobot {
             return sb.substring(0, sb.length() - 1);
         }
 
-        public void writeLine(String text){
+        public void writeLine(String text) {
             PrintWriter writer = null;
             try {
-                writer = new PrintWriter(new RobocodeFileOutputStream(fileName, true));
+                writer = new PrintWriter(new RobocodeFileOutputStream(getDataFile(fileName).getAbsolutePath(), true));
                 writer.println(text);
             } catch (IOException e) {
                 e.printStackTrace();
-            }finally {
-                if(writer != null){
+            } finally {
+                if (writer != null) {
                     writer.flush();
                     writer.close();
                 }
