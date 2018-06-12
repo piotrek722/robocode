@@ -29,13 +29,12 @@ public class MyRobot extends AdvancedRobot {
     private double reward = 0;
 
     private static final String TAB = "    ";
+    private CSVWriter csvWriter = new CSVWriter("data.csv");
+
 
     public void run() {
 //        initQTable();
 //        saveQTable();
-        CSVWriter csvWriter = new CSVWriter("data.csv");
-        csvWriter.writeLineSeparatedWithDelimiter("header1", "header2");
-
         try {
             loadQTable();
         } catch (IOException e) {
@@ -61,7 +60,7 @@ public class MyRobot extends AdvancedRobot {
             reward = 0;
 
             QTable.put(stateAction, updateValue);
-            writeStateActionToCSV(csvWriter, action);
+            addStateActionToCSV(csvWriter, action);
         }
     }
 
@@ -114,7 +113,7 @@ public class MyRobot extends AdvancedRobot {
         return "" + angle + distanceToEnemy + energy + enemyEnergy;
     }
 
-    private void writeStateActionToCSV(CSVWriter csvWriter, int action) {
+    private void addStateActionToCSV(CSVWriter csvWriter, int action) {
 
         int angle = quantizeAngle(angleToEnemy);
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
@@ -243,6 +242,7 @@ public class MyRobot extends AdvancedRobot {
         System.out.println("Reward of round number " + getRoundNum() + ": " + totalReward);
         totalReward = 0;
         saveQTable();
+        csvWriter.flushBuffer();
     }
 
     private void loadQTable() throws IOException {
@@ -298,14 +298,18 @@ public class MyRobot extends AdvancedRobot {
 
         private static final String DELIMITER = ",";
         private final String fileName;
+        Deque<String> buffer = new LinkedList<String>();
 
-        public CSVWriter(String fileName, String... headers) {
+        public CSVWriter(String fileName) {
             this.fileName = fileName;
-            writeLineSeparatedWithDelimiter(headers);
         }
 
         public void writeLineSeparatedWithDelimiter(String... strings) {
             writeLine(getTextSeparetedByDelimiter(strings));
+        }
+
+        public void addLineSeparatedWithDelimiter(String... strings) {
+            buffer.add(getTextSeparetedByDelimiter(strings));
         }
 
         private String getTextSeparetedByDelimiter(String... strings) {
@@ -319,6 +323,24 @@ public class MyRobot extends AdvancedRobot {
                 sb.append(header).append(DELIMITER);
             }
             return sb.substring(0, sb.length() - 1);
+        }
+
+        public void flushBuffer(){
+            PrintWriter writer = null;
+            try {
+                writer = new PrintWriter(new RobocodeFileOutputStream(getDataFile(fileName).getAbsolutePath(), true));
+                for(String text: buffer){
+                    writer.println(text);
+                }
+                buffer.clear();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (writer != null) {
+                    writer.flush();
+                    writer.close();
+                }
+            }
         }
 
         public void writeLine(String text) {
