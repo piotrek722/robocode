@@ -31,7 +31,6 @@ public class MyRobot extends AdvancedRobot {
     private static final String TAB = "    ";
     private CSVWriter csvWriter = new CSVWriter("data.csv");
 
-
     public void run() {
 //        initQTable();
 //        saveQTable();
@@ -238,6 +237,12 @@ public class MyRobot extends AdvancedRobot {
     @Override
     public void onRoundEnded(RoundEndedEvent e) {
         System.out.println("Reward of round number " + getRoundNum() + ": " + totalReward);
+
+        CSVWriter rewardWriter = new CSVWriter("reward.csv");
+//        rewardWriter.writeLineSeparatedWithDelimiter("round", "reward");
+
+        rewardWriter.writeLineSeparatedWithDelimiter("" + getRoundNum(), "" + totalReward);
+
         totalReward = 0;
         saveQTable();
         csvWriter.flushBuffer();
