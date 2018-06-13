@@ -66,8 +66,6 @@ public class MyRobot extends AdvancedRobot {
 
     private void performAction(int action) {
 
-        System.out.println("Performing action: " + action);
-
         switch (action) {
             case 1:
                 //move left
@@ -120,7 +118,7 @@ public class MyRobot extends AdvancedRobot {
         int energy = quantizeEnergy(getEnergy());
         int enemyEnergy = quantizeEnergy(this.enemyEnergy);
 
-        csvWriter.writeLineSeparatedWithDelimiter(
+        csvWriter.addLineSeparatedWithDelimiter(
                 "" + angle,
                 "" + distanceToEnemy,
                 "" + energy,
@@ -168,7 +166,7 @@ public class MyRobot extends AdvancedRobot {
             angleBucket = 2;
         } else if (angle <= 270) {
             angleBucket = 3;
-        } else if (angle <= 360) {
+        } else {
             angleBucket = 4;
         }
 
@@ -185,7 +183,7 @@ public class MyRobot extends AdvancedRobot {
             distanceBucket = 2;
         } else if (distance <= 750) {
             distanceBucket = 3;
-        } else if (distance <= 1000) {
+        } else {
             distanceBucket = 4;
         }
 
@@ -202,7 +200,7 @@ public class MyRobot extends AdvancedRobot {
             energyBucket = 2;
         } else if (energy <= 75) {
             energyBucket = 3;
-        } else if (energy <= 100) {
+        } else {
             energyBucket = 4;
         }
 
