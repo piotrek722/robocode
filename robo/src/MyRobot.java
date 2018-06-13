@@ -21,7 +21,7 @@ public class MyRobot extends AdvancedRobot {
     private static final int ANGLE_BUCKETS = 4;
     private static final int DISTANCE_BUCKETS = 4;
     private static final int ENERGY_BUCKETS = 4;
-    private static final int ACTIONS_SIZE = 6;
+    private static final int ACTIONS_SIZE = 7;
 
     private Map<String, Double> QTable = new HashMap<String, Double>();
 
@@ -59,6 +59,7 @@ public class MyRobot extends AdvancedRobot {
 
             String currentState = getCurrentState();
             int action = getAction(currentState);
+            addStateActionToCSV(csvWriter, action);
             String stateAction = currentState + action;
             double oldValue = QTable.get(stateAction);
 
@@ -75,7 +76,6 @@ public class MyRobot extends AdvancedRobot {
             reward = 0;
 
             QTable.put(stateAction, updateValue);
-            addStateActionToCSV(csvWriter, action);
         }
     }
 
@@ -110,6 +110,9 @@ public class MyRobot extends AdvancedRobot {
                 //turn gun right
                 setTurnGunRight(15);
                 break;
+            case 7:
+                doNothing();
+                break;
         }
 
         incrementBucketCount(bucketCounter.get("action"), action);
@@ -122,7 +125,7 @@ public class MyRobot extends AdvancedRobot {
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
         int angle = quantizeAngle(angleToEnemy);
         int energy = quantizeEnergy(getEnergy());
-        int enemyEnergy = quantizeEnergy(this.enemyEnergy);
+        int enemyEnergy = quantizeEnemyEnergy(this.enemyEnergy);
 
         incrementBucketCount(bucketCounter.get("distance"), distanceToEnemy);
         incrementBucketCount(bucketCounter.get("angle"), angle);
@@ -137,7 +140,7 @@ public class MyRobot extends AdvancedRobot {
         int angle = quantizeAngle(angleToEnemy);
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
         int energy = quantizeEnergy(getEnergy());
-        int enemyEnergy = quantizeEnergy(this.enemyEnergy);
+        int enemyEnergy = quantizeEnemyEnergy(this.enemyEnergy);
 
         csvWriter.addLineSeparatedWithDelimiter(
                 "" + angle,
@@ -198,11 +201,11 @@ public class MyRobot extends AdvancedRobot {
 
         int distanceBucket = 0;
 
-        if (distance <= 250) {
+        if (distance <= 150) {
             distanceBucket = 1;
-        } else if (distance <= 500) {
+        } else if (distance <= 300) {
             distanceBucket = 2;
-        } else if (distance <= 750) {
+        } else if (distance <= 450) {
             distanceBucket = 3;
         } else {
             distanceBucket = 4;
@@ -212,6 +215,23 @@ public class MyRobot extends AdvancedRobot {
     }
 
     private int quantizeEnergy(double energy) {
+
+        int energyBucket = 0;
+
+        if (energy <= 50) {
+            energyBucket = 1;
+        } else if (energy <= 75) {
+            energyBucket = 2;
+        } else if (energy <= 90) {
+            energyBucket = 3;
+        } else {
+            energyBucket = 4;
+        }
+
+        return energyBucket;
+    }
+
+    private int quantizeEnemyEnergy(double energy) {
 
         int energyBucket = 0;
 
