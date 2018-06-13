@@ -52,7 +52,7 @@ public class MyRobot extends AdvancedRobot {
             //update the table
             int getMaxValueAction = getMaxAction(getCurrentState());
             double futureValue = QTable.get(getCurrentState() + getMaxValueAction);
-            double sumReward = reward + getEnergy() / 100 - enemyEnergy / 100;
+            double sumReward = reward + getEnergy() / 20 - enemyEnergy / 100;
             double updateValue = (1 - ALPHA) * oldValue + ALPHA * (sumReward + GAMMA * futureValue);
 
             totalReward += sumReward;
@@ -68,31 +68,31 @@ public class MyRobot extends AdvancedRobot {
         switch (action) {
             case 1:
                 //move left
-                setTurnLeft(45);
-                setAhead(50);
+                setTurnLeft(15);
+                setAhead(25);
                 break;
             case 2:
                 //move right
-                setTurnRight(45);
-                setAhead(50);
+                setTurnRight(15);
+                setAhead(25);
                 break;
             case 3:
                 //back left
-                setTurnLeft(45);
-                setBack(50);
+                setTurnLeft(15);
+                setBack(25);
                 break;
             case 4:
                 //back right
-                setTurnRight(45);
-                setBack(50);
+                setTurnRight(15);
+                setBack(25);
                 break;
             case 5:
                 //turn gun left
-                setTurnGunLeft(45);
+                setTurnGunLeft(15);
                 break;
             case 6:
                 //turn gun right
-                setTurnGunRight(45);
+                setTurnGunRight(15);
                 break;
         }
 
