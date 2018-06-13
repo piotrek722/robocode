@@ -30,6 +30,21 @@ public class MyRobot extends AdvancedRobot {
 
     private static final String TAB = "    ";
     private CSVWriter csvWriter = new CSVWriter("data.csv");
+    private CSVWriter distanceBucketWriter = new CSVWriter("distance.csv");
+    private CSVWriter angleBucketWriter = new CSVWriter("angle.csv");
+    private CSVWriter energyBucketWriter = new CSVWriter("energy.csv");
+    private CSVWriter enemyEnergyBucketWriter = new CSVWriter("enemyEnergy.csv");
+    private CSVWriter actionWriter = new CSVWriter("action.csv");
+    private CSVWriter rewardWriter = new CSVWriter("reward.csv");
+
+    private Map<String, Map<Integer, Integer>> bucketCounter = new HashMap<String, Map<Integer, Integer>>();
+    {
+        bucketCounter.put("distance", new HashMap<Integer, Integer>());
+        bucketCounter.put("angle", new HashMap<Integer, Integer>());
+        bucketCounter.put("energy", new HashMap<Integer, Integer>());
+        bucketCounter.put("enemyEnergy", new HashMap<Integer, Integer>());
+        bucketCounter.put("action", new HashMap<Integer, Integer>());
+    }
 
     public void run() {
 //        initQTable();
@@ -42,16 +57,17 @@ public class MyRobot extends AdvancedRobot {
 
         while (true) {
 
-            int action = getAction();
-            String stateAction = getCurrentState() + action;
+            String currentState = getCurrentState();
+            int action = getAction(currentState);
+            String stateAction = currentState + action;
             double oldValue = QTable.get(stateAction);
 
             //perform action
             performAction(action);
 
             //update the table
-            int getMaxValueAction = getMaxAction(getCurrentState());
-            double futureValue = QTable.get(getCurrentState() + getMaxValueAction);
+            int getMaxValueAction = getMaxAction(currentState);
+            double futureValue = QTable.get(currentState + getMaxValueAction);
             double sumReward = reward + getEnergy() / 20 - enemyEnergy / 100;
             double updateValue = (1 - ALPHA) * oldValue + ALPHA * (sumReward + GAMMA * futureValue);
 
@@ -96,16 +112,22 @@ public class MyRobot extends AdvancedRobot {
                 break;
         }
 
+        incrementBucketCount(bucketCounter.get("action"), action);
         execute();
     }
 
     private String getCurrentState() {
 
         //quantizied
-        int angle = quantizeAngle(angleToEnemy);
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
+        int angle = quantizeAngle(angleToEnemy);
         int energy = quantizeEnergy(getEnergy());
         int enemyEnergy = quantizeEnergy(this.enemyEnergy);
+
+        incrementBucketCount(bucketCounter.get("distance"), distanceToEnemy);
+        incrementBucketCount(bucketCounter.get("angle"), angle);
+        incrementBucketCount(bucketCounter.get("energy"), energy);
+        incrementBucketCount(bucketCounter.get("enemyEnergy"), enemyEnergy);
 
         return "" + angle + distanceToEnemy + energy + enemyEnergy;
     }
@@ -128,11 +150,11 @@ public class MyRobot extends AdvancedRobot {
 
     private Random random = new Random();
 
-    private int getAction() {
+    private int getAction(String state) {
         if (random.nextDouble() < EXPLORE_RATE) {
             return getRandomAction();
         } else {
-            return getMaxAction(getCurrentState());
+            return getMaxAction(state);
         }
     }
 
@@ -238,14 +260,23 @@ public class MyRobot extends AdvancedRobot {
     public void onRoundEnded(RoundEndedEvent e) {
         System.out.println("Reward of round number " + getRoundNum() + ": " + totalReward);
 
-        CSVWriter rewardWriter = new CSVWriter("reward.csv");
-//        rewardWriter.writeLineSeparatedWithDelimiter("round", "reward");
-
         rewardWriter.writeLineSeparatedWithDelimiter("" + getRoundNum(), "" + totalReward);
+        saveCountWithWriter(distanceBucketWriter, bucketCounter.get("distance"));
+        saveCountWithWriter(angleBucketWriter, bucketCounter.get("angle"));
+        saveCountWithWriter(energyBucketWriter, bucketCounter.get("energy"));
+        saveCountWithWriter(enemyEnergyBucketWriter, bucketCounter.get("enemyEnergy"));
+        saveCountWithWriter(actionWriter, bucketCounter.get("action"));
 
         totalReward = 0;
         saveQTable();
         csvWriter.flushBuffer();
+    }
+
+    private void saveCountWithWriter(CSVWriter csvWriter, Map<Integer, Integer> bucketCounter) {
+
+        for(Map.Entry<Integer, Integer> entry: bucketCounter.entrySet()){
+            csvWriter.writeLineSeparatedWithDelimiter(String.valueOf(entry.getKey()), String.valueOf(entry.getKey()));
+        }
     }
 
     private void loadQTable() throws IOException {
@@ -294,6 +325,15 @@ public class MyRobot extends AdvancedRobot {
                     }
                 }
             }
+        }
+    }
+
+    private void incrementBucketCount(Map<Integer, Integer> counter, int bucket){
+        if(counter.get(bucket) == null){
+            counter.put(bucket, 1);
+        }else{
+            int count = counter.get(bucket);
+            counter.put(bucket, ++count);
         }
     }
 
