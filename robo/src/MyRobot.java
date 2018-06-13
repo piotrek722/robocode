@@ -10,7 +10,7 @@ public class MyRobot extends AdvancedRobot {
     //learning params
     private final static double ALPHA = 0.01;
     private final static double GAMMA = 0.8;
-    private static final double EXPLORE_RATE = 0.8;
+//    private static final double EXPLORE_RATE = 0.8;
 
     //robot state
     private double angleToEnemy = 0;
@@ -151,7 +151,7 @@ public class MyRobot extends AdvancedRobot {
     private Random random = new Random();
 
     private int getAction(String state) {
-        if (random.nextDouble() < EXPLORE_RATE) {
+        if (random.nextDouble() < 1 - (getRoundNum()/getNumRounds())) {
             return getRandomAction();
         } else {
             return getMaxAction(state);
