@@ -275,7 +275,7 @@ public class MyRobot extends AdvancedRobot {
     private void saveCountWithWriter(CSVWriter csvWriter, Map<Integer, Integer> bucketCounter) {
 
         for(Map.Entry<Integer, Integer> entry: bucketCounter.entrySet()){
-            csvWriter.writeLineSeparatedWithDelimiter(String.valueOf(entry.getKey()), String.valueOf(entry.getKey()));
+            csvWriter.writeLineSeparatedWithDelimiter(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
         }
     }
 
