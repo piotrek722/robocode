@@ -38,6 +38,7 @@ public class MyRobot extends AdvancedRobot {
     private CSVWriter rewardWriter = new CSVWriter("reward.csv");
 
     private Map<String, Map<Integer, Integer>> bucketCounter = new HashMap<String, Map<Integer, Integer>>();
+    private int action;
     {
         bucketCounter.put("distance", new HashMap<Integer, Integer>());
         bucketCounter.put("angle", new HashMap<Integer, Integer>());
@@ -62,28 +63,10 @@ public class MyRobot extends AdvancedRobot {
             save = true;
             String currentState = getCurrentState();
             save = false;
-
-            int action = getAction(currentState);
+            action = getAction(currentState);
             addStateActionToCSV(csvWriter, action);
-            String stateAction = currentState + action;
-            double oldValue = QTable.get(stateAction);
 
-            //perform action
-            turnRadarRight(360);
             performAction(action);
-
-            //update the table
-            String newState = getCurrentState();
-            int getMaxValueAction = getMaxAction(newState);
-            double futureValue = QTable.get(newState + getMaxValueAction);
-            double sumReward = reward + getEnergy() / 20 - enemyEnergy / 100;
-            double updateValue = (1 - ALPHA) * oldValue + ALPHA * (sumReward + GAMMA * futureValue);
-
-            totalReward += sumReward;
-            reward = 0;
-
-            QTable.put(stateAction, updateValue);
-
         }
     }
 
@@ -260,9 +243,25 @@ public class MyRobot extends AdvancedRobot {
 
     @Override
     public void onScannedRobot(ScannedRobotEvent e) {
+
+        String stateAction = getCurrentState() + action;
+        double oldValue = QTable.get(stateAction);
+
         distanceToEnemy = e.getDistance();
         angleToEnemy = e.getBearing() + 180;
         enemyEnergy = e.getEnergy();
+
+        //update the table
+        String newState = getCurrentState();
+        int getMaxValueAction = getMaxAction(newState);
+        double futureValue = QTable.get(newState + getMaxValueAction);
+        double sumReward = reward + getEnergy() / 20 - enemyEnergy / 100;
+        double updateValue = (1 - ALPHA) * oldValue + ALPHA * (sumReward + GAMMA * futureValue);
+
+        totalReward += sumReward;
+        reward = 0;
+
+        QTable.put(stateAction, updateValue);
         fire(1);
     }
 
