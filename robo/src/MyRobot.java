@@ -58,6 +58,10 @@ public class MyRobot extends AdvancedRobot {
             e.printStackTrace();
         }
 
+        setAdjustGunForRobotTurn(true);
+        setAdjustRadarForGunTurn(true);
+        setTurnRadarRight(Double.POSITIVE_INFINITY);
+
         while (true) {
 
             save = true;
