@@ -164,7 +164,7 @@ public class MyRobot extends AdvancedRobot {
     private Random random = new Random();
 
     private int getAction(String state) {
-        if (random.nextDouble() < 1 - (getRoundNum()/getNumRounds())) {
+        if (random.nextDouble() < 1 - ((double)getRoundNum()/getNumRounds())) {
             return getRandomAction();
         } else {
             return getMaxAction(state);
