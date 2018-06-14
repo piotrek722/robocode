@@ -46,6 +46,8 @@ public class MyRobot extends AdvancedRobot {
         bucketCounter.put("action", new HashMap<Integer, Integer>());
     }
 
+    private boolean save = true;
+
     public void run() {
 //        initQTable();
 //        saveQTable();
@@ -57,18 +59,23 @@ public class MyRobot extends AdvancedRobot {
 
         while (true) {
 
+            save = true;
             String currentState = getCurrentState();
+            save = false;
+
             int action = getAction(currentState);
             addStateActionToCSV(csvWriter, action);
             String stateAction = currentState + action;
             double oldValue = QTable.get(stateAction);
 
             //perform action
+            turnRadarRight(360);
             performAction(action);
 
             //update the table
-            int getMaxValueAction = getMaxAction(currentState);
-            double futureValue = QTable.get(currentState + getMaxValueAction);
+            String newState = getCurrentState();
+            int getMaxValueAction = getMaxAction(newState);
+            double futureValue = QTable.get(newState + getMaxValueAction);
             double sumReward = reward + getEnergy() / 20 - enemyEnergy / 100;
             double updateValue = (1 - ALPHA) * oldValue + ALPHA * (sumReward + GAMMA * futureValue);
 
@@ -76,6 +83,7 @@ public class MyRobot extends AdvancedRobot {
             reward = 0;
 
             QTable.put(stateAction, updateValue);
+
         }
     }
 
@@ -127,10 +135,12 @@ public class MyRobot extends AdvancedRobot {
         int energy = quantizeEnergy(getEnergy());
         int enemyEnergy = quantizeEnemyEnergy(this.enemyEnergy);
 
-        incrementBucketCount(bucketCounter.get("distance"), distanceToEnemy);
-        incrementBucketCount(bucketCounter.get("angle"), angle);
-        incrementBucketCount(bucketCounter.get("energy"), energy);
-        incrementBucketCount(bucketCounter.get("enemyEnergy"), enemyEnergy);
+        if(save){
+            incrementBucketCount(bucketCounter.get("distance"), distanceToEnemy);
+            incrementBucketCount(bucketCounter.get("angle"), angle);
+            incrementBucketCount(bucketCounter.get("energy"), energy);
+            incrementBucketCount(bucketCounter.get("enemyEnergy"), enemyEnergy);
+        }
 
         return "" + angle + distanceToEnemy + energy + enemyEnergy;
     }
