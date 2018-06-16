@@ -10,7 +10,7 @@ public class MyRobot extends AdvancedRobot {
     //learning params
     private final static double ALPHA = 0.01;
     private final static double GAMMA = 0.8;
-    private static final double EXPLORE_RATE = 0.8;
+//    private static final double EXPLORE_RATE = 0.8;
 
     //robot state
     private double robot_x = 0;
@@ -32,12 +32,29 @@ public class MyRobot extends AdvancedRobot {
 
     private static final String TAB = "    ";
 
+    private CSVWriter csvWriter = new CSVWriter("data.csv");
+    private CSVWriter distanceBucketWriter = new CSVWriter("distance.csv");
+    private CSVWriter angleBucketWriter = new CSVWriter("angle.csv");
+    private CSVWriter xBucketWriter = new CSVWriter("x.csv");
+    private CSVWriter yBucketWriter = new CSVWriter("y.csv");
+    private CSVWriter actionWriter = new CSVWriter("action.csv");
+    private CSVWriter rewardWriter = new CSVWriter("reward.csv");
+
+    private Map<String, Map<Integer, Integer>> bucketCounter = new HashMap<String, Map<Integer, Integer>>();
+    {
+        bucketCounter.put("distance", new HashMap<Integer, Integer>());
+        bucketCounter.put("angle", new HashMap<Integer, Integer>());
+        bucketCounter.put("x", new HashMap<Integer, Integer>());
+        bucketCounter.put("y", new HashMap<Integer, Integer>());
+        bucketCounter.put("action", new HashMap<Integer, Integer>());
+    }
+
+    private boolean save = true;
+
     public void run() {
 
-//        initQTable();
+        initQTable();
 //        saveQTable();
-        CSVWriter csvWriter = new CSVWriter("data.csv");
-        csvWriter.writeLineSeparatedWithDelimiter("header1", "header2");
 
         try {
             loadQTable();
@@ -47,8 +64,11 @@ public class MyRobot extends AdvancedRobot {
 
         while (true) {
 
+            save = true;
+
             int action = getAction();
             String stateAction = getCurrentState() + action;
+            save = false;
             double oldValue = QTable.get(stateAction);
 
             //perform action
@@ -59,7 +79,6 @@ public class MyRobot extends AdvancedRobot {
             double futureValue = QTable.get(getCurrentState() + getMaxValueAction);
             double updateValue = (1 - ALPHA) * oldValue + ALPHA * (reward + GAMMA * futureValue);
             QTable.put(stateAction, updateValue);
-            writeStateActionToCSV(csvWriter, action);
 
             totalReward += reward;
             reward = 0;
@@ -68,7 +87,6 @@ public class MyRobot extends AdvancedRobot {
 
     private void performAction(int action) {
 
-        System.out.println("Performing action: " + action);
 
         switch (action) {
             case 1:
@@ -91,6 +109,7 @@ public class MyRobot extends AdvancedRobot {
                 break;
         }
 
+        incrementBucketCount(bucketCounter.get("action"), action);
         execute();
     }
 
@@ -102,23 +121,37 @@ public class MyRobot extends AdvancedRobot {
         int angle = quantizeAngle(angleToEnemy);
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
 
+
+        if(save){
+            incrementBucketCount(bucketCounter.get("distance"), distanceToEnemy);
+            incrementBucketCount(bucketCounter.get("angle"), angle);
+            incrementBucketCount(bucketCounter.get("x"), x);
+            incrementBucketCount(bucketCounter.get("y"), y);
+        }
+
         return x + "" + y + "" + angle + "" + distanceToEnemy;
     }
 
-    private void writeStateActionToCSV(CSVWriter csvWriter, int action) {
+    private void addStateActionToCSV(CSVWriter csvWriter, int action) {
 
-        int x = quantizePosition(getX()); //robot_x
-        int y = quantizePosition(getY()); //robot_y
         int angle = quantizeAngle(angleToEnemy);
         int distanceToEnemy = quantizeDistance(this.distanceToEnemy);
+        int x = quantizePosition(getX());
+        int y = quantizePosition(getY());
 
-        csvWriter.writeLineSeparatedWithDelimiter("" + x, "" + y, "" + angle, "" + distanceToEnemy, "" + action);
+        csvWriter.addLineSeparatedWithDelimiter(
+                "" + angle,
+                "" + distanceToEnemy,
+                "" + x,
+                "" + y,
+                "" + action
+        );
     }
 
     private Random random = new Random();
 
     private int getAction() {
-        if (random.nextDouble() < EXPLORE_RATE) {
+        if (random.nextDouble() < 1 - ((double)getRoundNum()/getNumRounds())) {
             return getRandomAction();
         } else {
             return getMaxAction(getCurrentState());
@@ -161,7 +194,7 @@ public class MyRobot extends AdvancedRobot {
             positionBucket = 6;
         } else if (position <= 700) {
             positionBucket = 7;
-        } else if (position <= 800) {
+        } else {
             positionBucket = 8;
         }
         return positionBucket;
@@ -178,7 +211,7 @@ public class MyRobot extends AdvancedRobot {
             angleBucket = 2;
         } else if (angle <= 270) {
             angleBucket = 3;
-        } else if (angle <= 360) {
+        } else {
             angleBucket = 4;
         }
 
@@ -195,7 +228,7 @@ public class MyRobot extends AdvancedRobot {
             distanceBucket = 2;
         } else if (distance <= 750) {
             distanceBucket = 3;
-        } else if (distance <= 1000) {
+        } else {
             distanceBucket = 4;
         }
 
@@ -237,8 +270,33 @@ public class MyRobot extends AdvancedRobot {
     @Override
     public void onRoundEnded(RoundEndedEvent e) {
         System.out.println("Reward of round number " + getRoundNum() + ": " + totalReward);
+
+        rewardWriter.writeLineSeparatedWithDelimiter("" + getRoundNum(), "" + totalReward);
+        saveCountWithWriter(distanceBucketWriter, bucketCounter.get("distance"));
+        saveCountWithWriter(angleBucketWriter, bucketCounter.get("angle"));
+        saveCountWithWriter(xBucketWriter, bucketCounter.get("x"));
+        saveCountWithWriter(yBucketWriter, bucketCounter.get("y"));
+        saveCountWithWriter(actionWriter, bucketCounter.get("action"));
+
         totalReward = 0;
         saveQTable();
+        csvWriter.flushBuffer();
+    }
+
+    private void saveCountWithWriter(CSVWriter csvWriter, Map<Integer, Integer> bucketCounter) {
+
+        for(Map.Entry<Integer, Integer> entry: bucketCounter.entrySet()){
+            csvWriter.writeLineSeparatedWithDelimiter(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
+        }
+    }
+
+    private void incrementBucketCount(Map<Integer, Integer> counter, int bucket){
+        if(counter.get(bucket) == null){
+            counter.put(bucket, 1);
+        }else{
+            int count = counter.get(bucket);
+            counter.put(bucket, ++count);
+        }
     }
 
     private void loadQTable() throws IOException {
@@ -294,14 +352,18 @@ public class MyRobot extends AdvancedRobot {
 
         private static final String DELIMITER = ",";
         private final String fileName;
+        Deque<String> buffer = new LinkedList<String>();
 
-        public CSVWriter(String fileName, String... headers) {
+        public CSVWriter(String fileName) {
             this.fileName = fileName;
-            writeLineSeparatedWithDelimiter(headers);
         }
 
         public void writeLineSeparatedWithDelimiter(String... strings) {
             writeLine(getTextSeparetedByDelimiter(strings));
+        }
+
+        public void addLineSeparatedWithDelimiter(String... strings) {
+            buffer.add(getTextSeparetedByDelimiter(strings));
         }
 
         private String getTextSeparetedByDelimiter(String... strings) {
@@ -315,6 +377,24 @@ public class MyRobot extends AdvancedRobot {
                 sb.append(header).append(DELIMITER);
             }
             return sb.substring(0, sb.length() - 1);
+        }
+
+        public void flushBuffer(){
+            PrintWriter writer = null;
+            try {
+                writer = new PrintWriter(new RobocodeFileOutputStream(getDataFile(fileName).getAbsolutePath(), true));
+                for(String text: buffer){
+                    writer.println(text);
+                }
+                buffer.clear();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (writer != null) {
+                    writer.flush();
+                    writer.close();
+                }
+            }
         }
 
         public void writeLine(String text) {
