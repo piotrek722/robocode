@@ -21,7 +21,7 @@ public class MyRobot extends AdvancedRobot {
     private static final int ANGLE_BUCKETS = 4;
     private static final int DISTANCE_BUCKETS = 4;
     private static final int ENERGY_BUCKETS = 4;
-    private static final int ACTIONS_SIZE = 7;
+    private static final int ACTIONS_SIZE = 6;
 
     private Map<String, Double> QTable = new HashMap<String, Double>();
 
@@ -47,9 +47,10 @@ public class MyRobot extends AdvancedRobot {
     }
 
     private boolean save = true;
+    private String prevStateAction = null;
 
     public void run() {
-//        initQTable();
+        initQTable();
 //        saveQTable();
         try {
             loadQTable();
@@ -59,30 +60,31 @@ public class MyRobot extends AdvancedRobot {
 
         while (true) {
 
+            if(prevStateAction != null){
+                //update the table
+                String newState = getCurrentState();
+                int getMaxValueAction = getMaxAction(newState);
+                double futureValue = QTable.get(newState + getMaxValueAction);
+                double sumReward = reward + getEnergy() / 20;
+                double updateValue = (1 - ALPHA) * QTable.get(prevStateAction) + ALPHA * (sumReward + GAMMA * futureValue);
+
+                totalReward += sumReward;
+                reward = 0;
+
+                QTable.put(prevStateAction, updateValue);
+            }
+
             save = true;
             String currentState = getCurrentState();
             save = false;
 
             int action = getAction(currentState);
             addStateActionToCSV(csvWriter, action);
-            String stateAction = currentState + action;
-            double oldValue = QTable.get(stateAction);
+            prevStateAction = currentState + action;
 
             //perform action
-            turnRadarRight(360);
+            //turnRadarRight(360);
             performAction(action);
-
-            //update the table
-            String newState = getCurrentState();
-            int getMaxValueAction = getMaxAction(newState);
-            double futureValue = QTable.get(newState + getMaxValueAction);
-            double sumReward = reward + getEnergy() / 20 - enemyEnergy / 100;
-            double updateValue = (1 - ALPHA) * oldValue + ALPHA * (sumReward + GAMMA * futureValue);
-
-            totalReward += sumReward;
-            reward = 0;
-
-            QTable.put(stateAction, updateValue);
 
         }
     }
@@ -117,9 +119,6 @@ public class MyRobot extends AdvancedRobot {
             case 6:
                 //turn gun right
                 setTurnGunRight(15);
-                break;
-            case 7:
-                doNothing();
                 break;
         }
 
